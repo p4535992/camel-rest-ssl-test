@@ -496,7 +496,7 @@
 	</cxf:rsServer>
 	
 	
-	 <cxf:rsServer id="rsServerPersonServiceEndpointSSL" address="${https.serviceHost}:${https.servicePort}${endpointUriPersonService}/person"  		
+	 <cxf:rsServer id="rsServerPersonServiceEndpointSSL" address="${https.serviceHost}:${https.servicePort}/cxf${endpointUriPersonService}/person"  		
 		serviceClass="it.abd.esb.camel.rest.endpoint.PersonService"
 		loggingFeatureEnabled="true" loggingSizeLimit="20" staticSubresourceResolution="true"> 
 		<cxf:serviceBeans>
