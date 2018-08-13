@@ -1,0 +1,794 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+-->
+        
+<!-- Configures the Camel Context-->
+<!-- CHECKOUT http://www.consulting-notes.com/2010/12/basic-rest-service-in-apache-cxf-vs.html -->
+<!--
+ xmlns:blueprint="http://www.osgi.org/xmlns/blueprint/v1.0.0"
+ xmlns:blueprint-cm="http://aries.apache.org/blueprint/xmlns/blueprint-cm/v1.0.0"
+ xmlns:blueprint-aries-cm="http://aries.apache.org/blueprint/xmlns/blueprint-cm/v1.1.0"
+ xmlns:blueprint-jaxws="http://cxf.apache.org/blueprint/jaxws"
+ xmlns:blueprint-jaxrs="http://cxf.apache.org/blueprint/jaxrs"
+ xmlns:blueprint-cxf="http://cxf.apache.org/blueprint/core"
+ xmlns:blueprint-schema-cxf="http://camel.apache.org/schema/blueprint/cxf" 
+ 
+ http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd
+ http://aries.apache.org/blueprint/xmlns/blueprint-cm/v1.0.0 http://aries.apache.org/blueprint/xmlns/blueprint-cm/v1.0.0.xsd
+ http://cxf.apache.org/blueprint/jaxws http://cxf.apache.org/schemas/blueprint/jaxws.xsd
+ http://cxf.apache.org/blueprint/jaxrs http://cxf.apache.org/schemas/blueprint/jaxrs.xsd
+ http://cxf.apache.org/blueprint/core http://cxf.apache.org/schemas/blueprint/core.xsd
+ http://camel.apache.org/schema/blueprint/cxf http://camel.apache.org/schema/blueprint/cxf.xsd
+ -->
+<beans xmlns="http://www.springframework.org/schema/beans"	        
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:camel="http://camel.apache.org/schema/spring"
+       xmlns:cxf-core="http://cxf.apache.org/core"
+       xmlns:cxf="http://camel.apache.org/schema/cxf"
+       xmlns:osgix="http://www.springframework.org/schema/osgi-compendium"
+       xmlns:ctx="http://www.springframework.org/schema/context"
+       xmlns:http="http://cxf.apache.org/transports/http/configuration"
+       xmlns:sec="http://cxf.apache.org/configuration/security"
+       xmlns:httpj="http://cxf.apache.org/transports/http-jetty/configuration"
+       xmlns:spring-security="http://www.springframework.org/schema/security"
+       xmlns:jaxws="http://cxf.apache.org/jaxws"
+       xmlns:jaxrs="http://cxf.apache.org/jaxrs" 
+       xmlns:jaxrs-client="http://cxf.apache.org/jaxrs-client"      
+       xmlns:osgi="http://www.springframework.org/schema/osgi"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://camel.apache.org/schema/cxf http://camel.apache.org/schema/cxf/camel-cxf.xsd
+       http://cxf.apache.org/core http://cxf.apache.org/schemas/core.xsd
+       http://www.springframework.org/schema/osgi-compendium http://www.springframework.org/schema/osgi-compendium/spring-osgi-compendium.xsd
+       http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+       http://cxf.apache.org/transports/http/configuration http://cxf.apache.org/schemas/configuration/http-conf.xsd
+       http://cxf.apache.org/configuration/security http://cxf.apache.org/schemas/configuration/security.xsd
+       http://cxf.apache.org/transports/http-jetty/configuration http://cxf.apache.org/schemas/configuration/http-jetty.xsd
+       http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security.xsd
+       http://camel.apache.org/schema/spring-security http://camel.apache.org/schema/spring-security/camel-spring-security.xsd
+       http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd
+       http://www.springframework.org/schema/osgi http://www.springframework.org/schema/osgi/spring-osgi.xsd
+       http://cxf.apache.org/jaxrs http://cxf.apache.org/jaxrs.xsd
+       http://cxf.apache.org/jaxrs-client http://cxf.apache.org/jaxrs-client.xsd">
+        
+    <!-- 
+    	@href http://blog.nanthrax.net/?p=101
+		@href https://github.com/santoshjoshi/camel-cxfrs-example
+		@href https://www.javacodegeeks.com/2012/05/rest-endpoint-for-integration-using.html
+		@href https://blog.stackleader.com/camel/2016/05/02/deploy-apache-camel-quickstart-karaf.html
+		@href https://github.com/452/fuse-camel-swagger/
+		@href https://dzone.com/articles/building-cxf-rest-service-osgi
+		@href https://github.com/apache/servicemix/blob/master/examples/cxf/cxf-jaxrs/src/main/java/org/apache/servicemix/examples/cxf/jaxrs/Order.java
+     	@href https://dzone.com/articles/basic-rest-service-apache-cxf
+     	@href http://www.dreamsyssoft.com/blog/blog.php?/archives/7-Simple-REST-Web-Service-in-Java-with-Spring-and-CXF.html
+    -->
+    
+    <!-- ============================================ -->
+	<!-- SETUP CONFIGURATION PROPERTIES               -->
+	<!-- ============================================ -->
+    <!--  
+    <ctx:property-placeholder location="META-INF/config/abd-esb-alfresco-rest.properties,classpath:META-INF/config/override-abd-esb-alfresco-rest.properties" ignore-resource-not-found="true" />   
+    -->
+    <!-- bridge spring property placeholder with Camel -->
+	<!-- you must NOT use the <context:property-placeholder at the same time, only this bridge bean -->
+	<!-- class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer"> -->
+	<bean id="properties" class="org.apache.camel.spring.spi.BridgePropertyPlaceholderConfigurer">
+	      <property name="ignoreResourceNotFound" value="true"/>
+		  <!-- <property name="location" value="classpath:config.properties,classpath:sensor.properties"/> -->
+	      <property name="locations">
+	        <list>
+				<value>META-INF/config/abd-esb-alfresco-rest.properties</value>
+	            <value>classpath:META-INF/config/abd-esb-alfresco-rest.properties</value>
+	            <value>classpath:META-INF/config/override-abd-esb-alfresco-rest.properties</value>
+	        </list>
+	    </property>
+	</bean>
+    
+    <import resource="classpath*:camel-definitions.xml"/>
+    <import resource="classpath:META-INF/cxf/cxf.xml" />
+    <!--  
+    <import resource="classpath:META-INF/cxf/cxf-extension-jaxrs-binding.xml" />
+    <import resource="classpath:META-INF/cxf/cxf-extension-http.xml" />
+    <import resource="classpath:META-INF/cxf/cxf-extension-http-jetty.xml" />
+    <import resource="classpath:META-INF/cxf/cxf-servlet.xml"/> 
+    -->
+    
+    <!-- =================================== -->
+    <!-- Interceptor declaration for logging -->
+    <!-- =================================== -->
+    <!-- https://stackoverflow.com/questions/8065737/how-to-log-apache-cxf-soap-request-and-soap-response-using-log4j -->
+	<bean id="loggingFeature" class="org.apache.cxf.feature.LoggingFeature" />
+	<!-- NOTE: parentc convept is not supported on blueprint -->
+	<bean id="abstractLoggingInterceptor" abstract="true">
+	    <property name="prettyLogging" value="true"/>
+	</bean>
+	<bean id="loggingInInterceptor" class="org.apache.cxf.interceptor.LoggingInInterceptor" parent="abstractLoggingInterceptor"/>
+	<bean id="loggingOutInterceptor" class="org.apache.cxf.interceptor.LoggingOutInterceptor" parent="abstractLoggingInterceptor"/>
+	<!-- =================================== -->		
+    <!-- PROVIDERS                -->
+    <!-- =================================== -->
+    <bean id="jacksonObjectMapper" class="it.abd.esb.camel.converter.MyJsonMapper" /> 
+    <bean id="jacksonJsonProvider" class="com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider">
+    	<property name="mapper" ref="jacksonObjectMapper" />
+    </bean> 
+	<!-- <bean id="jacksonJaxbXmlProvider" class="com.fasterxml.jackson.jaxrs.xml.JacksonJaxbXMLProvider" /> -->	
+	<bean id="jsonProvider" class="org.apache.cxf.jaxrs.provider.json.JSONProvider"/>
+	
+	<bean id="wadlGenerator" class="org.apache.cxf.jaxrs.model.wadl.WadlGenerator">
+	    <property name="linkJsonToXmlSchema" value="true" />
+	</bean>
+	<!-- =========== -->
+	<!-- SETUP JETTY -->
+	<!-- =========== -->
+
+    <bean class="org.apache.camel.component.jetty8.JettyHttpComponent8" id="jetty">
+	<!-- 
+		<property name="sslPassword" value="${trustStore.password}"/>
+  		<property name="sslKeyPassword" value="${keyStore.password}"/>
+  		<property name="keystore" value="${trustStore.file}"/>
+  	-->
+  		<!-- <property name="sslContextParameters" ref="sslContextParameters" /> -->
+	</bean>
+    
+    <!-- ================ -->
+    <!-- SETUP HTTPS -->
+    <!-- ================ -->
+
+	<!-- 
+		uso piu complesso
+		@href https://www.talendforge.org/forum/viewtopic.php?id=39888 
+		@href http://cxf.apache.org/docs/jetty-configuration.html
+		@href https://cwiki.apache.org/confluence/display/CXF20DOC/Standalone+HTTP+Transport 
+		@href https://access.redhat.com/solutions/2173501
+		@href https://help.talend.com/reader/SUzvVjxkFWs4p6BXVXwyHQ/TLqaxzxTiBfmENKonkbTtg
+		@href https://access.redhat.com/documentation/en-us/red_hat_jboss_fuse/6.2.1/html/security_guide/cameljetty
+	-->
+	
+	<!-- 
+	Risolve il problema Protocol mismatch for port 443: engine's protocol is http, the url protocol is https
+	engine factory di seguti abilita la porta 443 a delle comunicazione ssl senza autenticazione , ma non
+	ce ne e' mai sato bisogno , NON e' necessario abilitare servicemix sulle connessioni https andando a
+	modificare il file /opt/apache-servicemix-6.0.0/etc/org.ops4j.pax.web.cfg.empty.stub creando il
+	nuovo file /opt/apache-servicemix-6.0.0/etc/org.ops4j.pax.web.cfg
+	--> 
+    
+    <!-- https://github.com/apache/camel/blob/master/components/camel-cxf/src/test/resources/org/apache/camel/component/cxf/jaxrs/CxfRsSpringGlobalSslProducer.xml -->
+    <!-- https://access.redhat.com/documentation/en-us/red_hat_jboss_fuse/6.2.1/html-single/apache_cxf_security_guide/index -->
+    
+    <!--
+    When you said "configured https at jboss fuse level " I believe you mean you configured in the 
+    $JBOSS_FUSE/etc/org.ops4j.pax.web.cfg.
+    Then as your cxf rs endpoint get deployed into the JBoss FUSE container, the best practice is 
+    that this endpoint use the servlet transport managed by this container
+    (the HTTP OSGi service implmented by OPS4J PAXWEB with jetty), so your configuration address for the 
+    cxf:rsServer should be relative address like address="/myendpoint", then you can access it 
+    from https://localhost:8443/cxf/myendpoint. Also, as the https already configured at JBoss FUSE level, 
+    you don't need 
+     -->
+    
+    <httpj:engine-factory id="ssl-enable" bus="cxf">
+        <!-- SSL enable  -->     
+        <!--  
+	    <httpj:identifiedTLSServerParameters id="secureSign">	   
+	      <httpj:tlsServerParameters>
+		        <sec:keyManagers keyPassword="${keyStore.password}">
+		          	<sec:keyStore type="${keyStore.type}" password="${keyStore.password}" resource="${keyStore.file}"/>
+		        </sec:keyManagers>
+	      </httpj:tlsServerParameters>
+	    </httpj:identifiedTLSServerParameters>
+	    -->
+        <!-- you just need to specify the TLS Server configuration for the certain port -->
+        <httpj:engine port="${https.servicePort}">
+            <httpj:tlsServerParameters>
+                <sec:keyManagers keyPassword="${keyStore.password}">
+                    <sec:keyStore type="${keyStore.type}" password="${keyStore.password}" resource="${keyStore.file}"/>
+                </sec:keyManagers>
+				<!--
+				these filter ensure tha a chipersuite with export-suitable
+				or null encryption is used, but exclude anonymus Diffie-Helman key change 
+				as this is vulnerable to man-in-the-middle attacks
+				 --> 
+                <sec:cipherSuitesFilter>
+			          <sec:include>.*_EXPORT_.*</sec:include>
+			          <sec:include>.*_EXPORT1024_.*</sec:include>
+			          <sec:include>.*_WITH_DES_.*</sec:include>
+			          <sec:include>.*_WITH_AES_.*</sec:include>
+			          <sec:include>.*_WITH_NULL_.*</sec:include>
+			          <sec:exclude>.*_DH_anon_.*</sec:exclude>
+			     </sec:cipherSuitesFilter>
+			     
+			     <sec:clientAuthentication want="false" required="false" />
+			     <!--
+			     It is expected that the keystore file contains just one key entry, so it is not necessary 
+			     to specify a key alias to identify the entry. If you are deploying a keystore file with 
+			     multiple key entries, however, it is possible to specify the key in this case by adding the sec:certAlias element as a child of the http:tlsClientParameters element, as follows:  
+			      -->
+			     <sec:certAlias>selfsign</sec:certAlias>
+            </httpj:tlsServerParameters>
+            <!-- <httpj:tlsServerParametersRef id="secureSign" /> --> <!-- ridondante -->           
+	      	<httpj:threadingParameters minThreads="5" maxThreads="15" />
+	      	<!-- http://keizer-soze.blogspot.com/2014/03/handling-dos-with-apache-camel-cxfrs.html -->	
+	      	<!-- Connector must be SelectChannelConnector -->
+	      	<!--      	 
+            <httpj:connector>	      		
+	          	<bean class="org.eclipse.jetty.server.nio.SelectChannelConnector">
+	            	<property name = "port" value="80" />
+	            	<property name = "requestBufferSize" value="1024000" />
+	             	<property name = "responseBufferSize" value="1024000" />
+	             	<property name = "acceptors" value="8" />   
+	     		 	<property name = "reuseAddress" value="true"/>          
+	          	</bean>
+	        </httpj:connector>
+	        -->
+	      	<httpj:sessionSupport>true</httpj:sessionSupport>
+        </httpj:engine>
+    </httpj:engine-factory>
+    
+    <!-- HTTP CONDUIT -->
+    
+    <!-- Set up an SSL conduit. The asterix in the name attribute below maps
+    this conduit to every endpoint (all conduit names must end with
+    ".http-conduit"). -->
+    <http:conduit name="*.http-conduit">
+        <http:tlsClientParameters secureSocketProtocol="SSL" disableCNCheck="true">
+            <sec:keyManagers keyPassword="${keyStore.password}">
+                <sec:keyStore type="${keyStore.type}" password="${keyStore.password}" file="${keyStore.file}" />
+            </sec:keyManagers>
+            <sec:trustManagers>
+                <sec:keyStore type="${trustStore.type}" password="${trustStore.password}" file="${trustStore.file}" />
+            </sec:trustManagers>
+        </http:tlsClientParameters>
+        <http:client AutoRedirect="true" Connection="Keep-Alive" />
+    </http:conduit>
+    
+	<!-- https://blog.akquinet.de/2015/04/09/exposing-a-web-service-via-https-with-jboss-fuse/ -->	   
+    <sslContextParameters id="sslContexParameter" xmlns="http://camel.apache.org/schema/spring">
+	   <keyManagers keyPassword="${keyStore.password}">
+	      <keyStore type="${keyStore.type}"  resource="${keyStore.file}" password="${keyStore.password}" />
+	   </keyManagers>
+	   <trustManagers>
+	      <keyStore type="${keyStore.type}"  resource="${keyStore.file}" password="${keyStore.password}" />
+	   </trustManagers>
+	</sslContextParameters>
+   
+    <!-- ================ -->
+    <!-- SETUP SWAGGER -->
+    <!-- ================ -->
+	<!-- Swagger Beans Wordik (Swagger) -->	  
+	<bean id="swaggerResourceJSON" class="com.wordnik.swagger.jaxrs.listing.ApiListingResourceJSON" />	
+    <!-- Swagger writers -->      
+    <bean id="resourceWriter" class="com.wordnik.swagger.jaxrs.listing.ResourceListingProvider" />
+    <bean id="apiWriter" class="com.wordnik.swagger.jaxrs.listing.ApiDeclarationProvider" />	  
+    <bean id="swaggerConfig" class="com.wordnik.swagger.jaxrs.config.BeanConfig">
+        <property name="resourcePackage" value="it.abd.esb.camel.rest.endpoint.impl"/>
+        <property name="version" value="1.0.0"/>
+        <property name="basePath" value="http://localhost:8282/cxf/swagger"/>
+        <property name="title" value="Rest sample app"/>
+        <property name="description" value="This is a app."/>
+        <property name="contact" value="tentimarco0@gmail.com"/>
+        <property name="license" value="Apache 2.0 License"/>
+        <property name="licenseUrl" value="http://www.apache.org/licenses/LICENSE-2.0.html"/>
+        <property name="scan" value="true"/>
+     </bean>
+		 
+    <!--  CXF Swagger2Feature -->
+    <!-- https://tutel.me/c/programming/questions/39559338/classloader+castexception+with+karaf+cxf+using+blueprint -->
+    <!-- http://cxf.apache.org/docs/swagger2feature.html -->
+    <!--
+    When Swagger is enabled by Swagger feature, the Swagger documents will be available at the 
+    location URL constructed of the service endpoint location followed by /swagger.json 
+    or /swagger.yaml. 
+     -->
+     <!--  
+   <bean id="swagger2Feature" class="org.apache.cxf.jaxrs.swagger.SwaggerFeature">
+       <property name="resourcePackage" value="it.abd.esb.camel.rest.endpoint.impl" />
+       <property name="version" value="2.0" />
+       <property name="basePath" value="http://localhost:8181/cxf/person" />
+       <property name="title" value="Swagger UI Integration Sample" />
+       <property name="description" value="Swagger UI Integration Sample for demonstrating its working." />
+       <property name="contact" value="tentimarco0@gmail.com" />
+       <property name="scan" value="true" />
+   </bean>
+	 -->
+	 
+	<!-- ==================== -->
+    <!-- SETUP AUTHENTICATION -->
+    <!-- ==================== -->
+          
+    <!-- Camel CXF Authentication and Authroization -->
+
+   	<bean id="authenticationInterceptor" class="it.abd.esb.camel.interceptor.AuthenticationInterceptor"></bean>
+
+	<!-- Set Authorization for each class service in teh authoirization paragrah-->
+
+    
+    <!--Basic authentication class-->
+ 	<bean id="basicAuthentication" class="it.abd.esb.camel.interceptor.BasicAuthentication" />
+
+    <bean id="securityExceptionInterceptor" class="it.abd.esb.camel.interceptor.SecurityExceptionInterceptor"></bean>
+    
+    <bean id="defaultHostnameVerifier" class="org.apache.cxf.transport.https.httpclient.DefaultHostnameVerifier"/>
+       	 
+	<!-- ================ -->
+    <!-- SETUP CXF        -->
+    <!-- ================ -->
+	<!-- 
+	cxf-bus is the bus configuration for CXF. It is like the manager for all CXF services. 
+	The most common use as far as I know is to configure custom interceptors (for auditing, 
+	request/response manipulation, headers manipulation etc)
+	-->
+	<!-- https://stackoverflow.com/questions/8065737/how-to-log-apache-cxf-soap-request-and-soap-response-using-log4j -->
+	<cxf-core:bus>
+	    <cxf-core:inInterceptors>
+	        <ref bean="loggingInInterceptor"/>
+	    </cxf-core:inInterceptors>
+	    <cxf-core:outInterceptors>
+	        <ref bean="loggingOutInterceptor"/>
+	    </cxf-core:outInterceptors>
+	    <cxf-core:outFaultInterceptors>
+	        <ref bean="loggingOutInterceptor"/>
+	    </cxf-core:outFaultInterceptors>
+	    <cxf-core:inFaultInterceptors>
+	        <ref bean="loggingInInterceptor"/>
+	    </cxf-core:inFaultInterceptors>
+	</cxf-core:bus>
+
+	<!-- ========================== -->
+	<!-- SETUP JMX                  -->
+	<!-- ========================== -->
+	
+	<!-- CUSTOM JMX NOTIFIER -->
+    <!-- 
+    <bean id="jmxEventNotifier" class="org.apache.camel.management.JmxNotificationEventNotifier">
+ 		<property name="source" value="ServiceProxy"/>
+ 		<property name="ignoreCamelContextEvents" value="true"/>
+ 		<property name="ignoreRouteEvents" value="true"/>
+ 		<property name="ignoreServiceEvents" value="true"/>
+		<property name="ignoreExchangeEvents" value="true"/>
+    </bean>
+	-->
+	
+	<!-- https://grokonez.com/java-integration/router-message-apache-camel-service-mix -->
+    <!-- 
+    <bean id="jms" class="org.apache.activemq.camel.component.ActiveMQComponent">
+		<property name="brokerURL" value="tcp://localhost:61616" />
+		<property name="userName" value="karaf"/>
+        <property name="password" value="karaf"/>
+	</bean>
+	-->
+	
+	<!-- ===================================== -->
+	<!-- ===================================== -->
+	<!-- ===================================== -->
+	<!-- ===================================== --> 
+	 
+	 <!-- ===================================== -->
+	 <!-- SETUP BEANS (TEST) -->
+	 <!-- ===================================== -->
+	 
+   	 <!-- API resource (Implementation Rest Service) 
+	 Implementation of the rest service
+	 The third note in the XML is the just the restServiceImpl configuration and the injection of 
+	 the helloService as a property inside the HelloRestServiceImpl 
+	 -->
+ 	<bean id="personProcessor" class="it.abd.esb.camel.rest.processor.PersonProcessor" />
+ 	<bean id="personServiceEndpoint" class="it.abd.esb.camel.rest.endpoint.PersonService"/>
+ 	<bean id="helloServiceEndPoint" class="it.abd.esb.camel.rest.endpoint.HelloRestService"></bean>
+ 	<bean id="personServiceEndpoinImpl" class="it.abd.esb.camel.rest.endpoint.impl.PersonServiceImpl"/>
+    <bean id="claimProcessor" class="it.abd.esb.camel.rest.processor.ClaimProcessor" />
+    
+    <!-- SERVICE - request/response processing -->
+	<bean id="getcustomerDetServiceId" class="it.abd.esb.camel.service.impl.GetCustomerDetailsService" />
+	<bean id="newCustomerServiceId" class="it.abd.esb.camel.service.impl.NewCustomerService" />
+	<bean id="updateCustAddressServiceId" class="it.abd.esb.camel.service.impl.UpdateCustomerAddrsService" />
+	<!-- SERVICE - explicit -->
+	<!--Points to the reference below -->	
+	<bean id="helloServiceEndpointImpl" class="it.abd.esb.camel.rest.endpoint.impl.HelloRestServiceImpl"> 
+		 <!-- <property name="helloService" ref="helloServiceReferenceServiceId"/> -->
+		  <property name="helloService" ref="helloServiceImplId"/>
+	</bean>
+	
+    <!-- REFERENCE SERVICE -->	
+	<!-- This has to point to the service registered through serviceimpl.xml in the service.impl project in the OSGI-INF/blueprint -->
+	<!-- The reference tag will lookup the service registry for a bean with the same id. -->
+	
+	<!-- SETUP SERVICE BEFORE REFERENCE -->	
+	<!--  
+	<blueprint:service id="helloServiceImplId"  interface="it.abd.esb.camel.service.HelloService">
+      <bean class="it.abd.esb.camel.service.impl.HelloServiceImpl" />
+   	</blueprint:service> 
+   	-->
+   	<bean id="helloServiceImplId" class="it.abd.esb.camel.service.impl.HelloServiceImpl" />
+   	
+   	<!-- ====================== -->
+   	<!-- AUTHORIZATION -->
+ 	<!-- ====================== -->  
+ 	<!--  
+	<bean id="authorizationInterceptorPersonService" class="org.apache.cxf.interceptor.security.SecureAnnotationsInterceptor">
+       	<property name="securedObject">
+       		<ref bean="personServiceEndpoinImpl"/>
+       	</property>
+    </bean>
+    -->
+	<!-- 
+	https://www.linkedin.com/pulse/how-add-custom-authentication-rest-services-using-apache-mostrom
+	https://github.com/emmostrom/CamelRestAuth/blob/master/src/main/resources/applicationContext.xml
+	to set up the bus on the routes you can do this:
+	camel:to uri="cxfbean:appRest?providers=#jsonProvider&amp;bus=#extensionManagerBus"/>
+	 -->	
+	 <!--  
+	<bean id="extensionManagerBus" class="org.apache.cxf.bus.extension.ExtensionManagerBus">
+	      <property name="inInterceptors">
+	         <list>
+	            <ref bean="authenticationInterceptor"/>
+	            <ref bean="authorizationInterceptorPersonService"/>
+	         </list>
+	      </property>
+	      <property name="outFaultInterceptors">
+	         <ref bean="securityExceptionInterceptor"/>
+	      </property>
+	</bean>	
+	-->
+	
+	 <!-- 
+   	 CXF-RS SERVER: FORNISCE WEB SERVICE
+   	 the jaxrs:server initiates a server which would start listening to the URLs that we mapped for. 
+   	 Of course, we would want to map the handlers for the URLs and those go under the serviceBeans.
+     -->
+	<!--  
+	<jaxrs:server id="karafFeaturesServiceEndpoint" address="http://localhost:9999/karaf">
+		<jaxrs:serviceBeans>
+			<ref bean="karafFeaturesServiceBean" />
+		</jaxrs:serviceBeans>
+	</jaxrs:server>
+	-->
+	
+	<!-- CXF SERVER -->
+	<cxf:cxfEndpoint id="claimEndpoint" address="${endpointUriClaimService}/claim" serviceClass="it.abd.esb.camel.service.soap.ClaimService" />
+    <cxf:rsServer id="statusEndpoint" address="${endpointUriClaimService}/status" serviceClass="it.abd.esb.camel.rest.endpoint.StatusService" />
+	
+  	<cxf:rsServer id="rsServerPersonServiceEndpoint" address="${endpointUriPersonService}/person"  		
+		serviceClass="it.abd.esb.camel.rest.endpoint.PersonService"
+		loggingFeatureEnabled="true" loggingSizeLimit="20" staticSubresourceResolution="true"> 
+		<cxf:serviceBeans>
+			<ref bean="personServiceEndpoint" />   
+			<ref bean="swaggerResourceJSON" />
+		</cxf:serviceBeans>
+		<cxf:inInterceptors>
+			<ref bean="loggingInInterceptor" />
+		</cxf:inInterceptors>
+		<cxf:outInterceptors>
+			<ref bean="loggingOutInterceptor" />
+		</cxf:outInterceptors>	   
+		<cxf:providers>
+			<ref bean="resourceWriter" />
+            <ref bean="apiWriter" /> 
+            <ref bean="wadlGenerator" />           
+			<ref bean="jacksonJsonProvider" />  		 
+			<!-- <ref bean="jacksonJaxbXmlProvider" /> -->
+			<!-- <ref bean="basicAuthentication" /> -->
+		</cxf:providers>
+		<cxf:features>		
+			<!-- 	 
+			 <ref bean="swagger2Feature" />	
+			 -->
+			 <ref bean="loggingFeature" /> 	
+        </cxf:features>	
+        <!-- http://camel.465427.n5.nabble.com/Camel-CXFRS-and-WADL-generation-td5768148.html -->
+        <!-- 
+        <cxf:properties>
+             <entry key="publishedEndpointUrl" value="${https.serviceHost}:${https.servicePort}/cxf/person"/>
+        </cxf:properties> 	
+        -->
+	</cxf:rsServer>
+	
+	
+	 <cxf:rsServer id="rsServerPersonServiceEndpointSSL" address="${https.serviceHost}:${https.servicePort}${endpointUriPersonService}/person"  		
+		serviceClass="it.abd.esb.camel.rest.endpoint.PersonService"
+		loggingFeatureEnabled="true" loggingSizeLimit="20" staticSubresourceResolution="true"> 
+		<cxf:serviceBeans>
+			<ref bean="personServiceEndpoint" />   
+			<ref bean="swaggerResourceJSON" />
+		</cxf:serviceBeans>
+		<cxf:inInterceptors>
+			<ref bean="loggingInInterceptor" />
+		</cxf:inInterceptors>
+		<cxf:outInterceptors>
+			<ref bean="loggingOutInterceptor" />
+		</cxf:outInterceptors>	   
+		<cxf:providers>
+			<ref bean="resourceWriter" />
+            <ref bean="apiWriter" /> 
+            <ref bean="wadlGenerator" />           
+			<ref bean="jacksonJsonProvider" />  		 
+		</cxf:providers>
+		<cxf:features>		
+			 <ref bean="loggingFeature" /> 	
+        </cxf:features>	
+	</cxf:rsServer>
+	
+	<cxf:rsServer id="rsServerHelloServiceEnpoint" address="/hello">
+		<cxf:serviceBeans>
+			<!-- <ref bean="helloServiceEndpointImpl" />  -->  
+			<ref bean="helloServiceEndPoint" />
+		</cxf:serviceBeans>
+		<cxf:inInterceptors>
+			<ref bean="loggingInInterceptor" />
+		</cxf:inInterceptors>
+		<cxf:outInterceptors>
+			<ref bean="loggingOutInterceptor" />
+		</cxf:outInterceptors>
+		<!-- <cxf:features> <ref bean="loggingFeature" /> </cxf:features> -->
+		<cxf:providers>
+			<ref bean="jacksonJsonProvider" />
+		</cxf:providers>
+	</cxf:rsServer>
+	   
+    <camelContext trace="true" id="camelContext" xmlns="http://camel.apache.org/schema/spring">
+    	<!-- FUNZIONA NEL CASO AVESSIMO BISOGNO DI SPECIFICO CODICE ERST DSL -->  
+    	<!--         
+        <packageScan>
+           	<package>it.abd.esb.camel.rest.route</package>
+       	</packageScan>
+		-->
+		<!--
+		cxfrs://address?options 
+		Where address represents the CXF endpoint's address	
+					
+		cxfrs:bean:rsEndpoint	
+		Where rsEndpoint represents the Spring bean's name which represents the CXFRS client or server
+		
+		For either style above, you can append options to the URI as follows:	
+		cxfrs:bean:cxfEndpoint?resourceClasses=org.apache.camel.rs.Example 
+		 -->
+		<route id="personServiceRoute" streamCache="true" handleFault="true">
+			<from uri="cxfrs:bean:rsServerPersonServiceEndpoint" /> 
+			<log message="Processing CXF route....operation name ${header.operationName}"/>			
+			<log message="Processing CXF route....http method ${header.CamelHttpMethod}" />
+		    <log message="Processing CXF route....path is ${header.CamelHttpPath}" />
+		    <log message="Processing CXF route....body is ${body}" />	
+		    <log message="Processing CXF route....HEADERS: ${headers}" />
+		    <camel:setHeader headerName="Access-Control-Allow-Origin">
+	            <camel:constant>*</camel:constant>
+			</camel:setHeader>	    
+			<removeHeaders pattern="org.apache.cxf.headers*" />
+			<!--  
+			<process ref="personProcessor" />		        
+		    oppure se semplice classe che implementa processor camel o
+		    un metodo qualsiasi		         
+		    <bean ref="personProcessor" method="process"/>
+			-->			
+			<!-- CBR pattern -->
+			<!-- https://stackoverflow.com/questions/39844793/call-rest-service-from-apache-camel-blueprint -->
+			<choice>
+				<when>
+					<simple>${header.operationName} == 'ping'</simple>
+					<to uri="direct:invokePersonServiceRoutePing" />
+				</when>
+				<when>
+					<simple>${header.operationName} == 'getPerson'</simple>
+					<to uri="direct:invokePersonServiceRouteGetPerson" />
+				</when>
+				<when>
+					<simple>${header.operationName} == 'putPerson'</simple>
+					<to uri="direct:invokePersonServiceRoutePutPerson" />
+				</when>				      
+				<otherwise>
+					<log message="#### Resource is not implemented for method ${header.CamelHttpMethod} or operation ${header.operationName}" />
+					<log message="No suitable process for $simple{headers.operationName}" />
+                    <setHeader headerName="CamelHttpResponseCode">
+                        <constant>404</constant>
+                    </setHeader>
+				</otherwise>
+		    </choice>			
+	        <!--  
+	        <recipientList>
+			      <simple>direct:${header.operationName}</simple>
+			</recipientList>
+			-->				
+			<marshal>
+				<json library="Jackson" />
+			</marshal>		
+		</route>
+		
+		<route id="personServiceRouteSSL" streamCache="true" handleFault="true">
+			<from uri="cxfrs:bean:rsServerPersonServiceEndpointSSL?sslContextParameters=#sslContexParameter&amp;hostnameVerifier=#defaultHostnameVerifier&amp;synchronous=true" /> 
+			<log message="Processing CXF route....operation name ${header.operationName}"/>			
+			<log message="Processing CXF route....http method ${header.CamelHttpMethod}" />
+		    <log message="Processing CXF route....path is ${header.CamelHttpPath}" />
+		    <log message="Processing CXF route....body is ${body}" />	
+		    <log message="Processing CXF route....HEADERS: ${headers}" />
+		    <camel:setHeader headerName="Access-Control-Allow-Origin">
+	            <camel:constant>*</camel:constant>
+			</camel:setHeader>	    
+			<removeHeaders pattern="org.apache.cxf.headers*" />
+			<!--  
+			<process ref="personProcessor" />		        
+		    oppure se semplice classe che implementa processor camel o
+		    un metodo qualsiasi		         
+		    <bean ref="personProcessor" method="process"/>
+			-->			
+			<!-- CBR pattern -->
+			<!-- https://stackoverflow.com/questions/39844793/call-rest-service-from-apache-camel-blueprint -->
+			<choice>
+				<when>
+					<simple>${header.operationName} == 'ping'</simple>
+					<to uri="direct:invokePersonServiceRoutePing" />
+				</when>
+				<when>
+					<simple>${header.operationName} == 'getPerson'</simple>
+					<to uri="direct:invokePersonServiceRouteGetPerson" />
+				</when>
+				<when>
+					<simple>${header.operationName} == 'putPerson'</simple>
+					<to uri="direct:invokePersonServiceRoutePutPerson" />
+				</when>				      
+				<otherwise>
+					<log message="#### Resource is not implemented for method ${header.CamelHttpMethod} or operation ${header.operationName}" />
+					<log message="No suitable process for $simple{headers.operationName}" />
+                    <setHeader headerName="CamelHttpResponseCode">
+                        <constant>404</constant>
+                    </setHeader>
+				</otherwise>
+		    </choice>			
+	        <!--  
+	        <recipientList>
+			      <simple>direct:${header.operationName}</simple>
+			</recipientList>
+			-->				
+			<marshal>
+				<json library="Jackson" />
+			</marshal>		
+		</route>
+		
+		<route id="restApi" streamCache="true" handleFault="true">
+			<from id="formId_service" uri="cxfrs://bean://rsServerHelloServiceEnpoint?hostnameVerifier=#defaultHostnameVerifier&amp;synchronous=true" />
+			<removeHeaders pattern="org.apache.cxf.headers*" />
+			<!-- CBR pattern -->
+			<choice>
+				<when>
+					<simple>${header.operationName} == 'handleGetSimple'</simple>
+					<to uri="direct:invokeHelloServiceRouteHandleGetSimple" />
+				</when>
+				<when>
+					<simple>${header.operationName} == 'handleGet'</simple>
+					<to uri="direct:invokeHelloServiceRouteHandleGet" />
+				</when>
+				<when>
+					<simple>${header.CamelHttpMethod}== 'GET'</simple>
+					<to uri="direct:getcustomerDetails" />
+				</when>
+				<when>
+					<simple>${header.CamelHttpMethod}== 'POST'</simple>
+					<to uri="direct:addcustomer" />
+				</when>
+				<when>
+					<simple>${header.CamelHttpMethod}== 'PUT'</simple>
+					<to uri="direct:udpatecustomerAddrs" />
+				</when>
+
+				<otherwise>
+					<log id="loggerIdHelloService" message="#### Resource is not implemented for ${header.CamelHttpMethod}" />
+				</otherwise>
+			</choice>
+		</route>
+		
+		<route id="invokePersonServiceRoutePingRouteID">
+			<from uri="direct:invokePersonServiceRoutePing" />
+			<bean ref="helloServiceEndpointImpl" method="ping" />
+		</route>
+		<route id="invokePersonServiceRouteHandleGetRouteID">							  
+			<from uri="direct:invokeHelloServiceRouteHandleGet" />
+			<bean ref="helloServiceEndpointImpl" method="handleGet" />
+		</route>
+		<route id="invokePersonServiceRouteHandleGetSimpleRouteID">							  
+			<from uri="direct:invokeHelloServiceRouteHandleGetSimple" />
+			<bean ref="helloServiceEndpointImpl" method="handleGetSimple" />
+		</route>
+		
+		
+		<route id="invokePutPersonServiceRouteGetPersonRouteID">
+			<from uri="direct:invokePutPersonServiceRouteGetPerson" />
+			<bean ref="personServiceEndpoinImpl" method="getPerson" />
+		</route>
+		<route id="invokePersonServiceRoutePutPersonRouteID">
+			<from uri="direct:invokePPersonServiceRoutePutPerson" />
+			<bean ref="personServiceEndpoinImpl" method="putPerson" />
+		</route>
+
+		<!-- GetAddress Details routing -->
+		<route id="invokeGetCustomerDetailsRouteID">
+			<from uri="direct:getcustomerDetails" />
+			<bean ref="getcustomerDetServiceId" method="getCustmerDetRequest" />
+			<bean ref="getcustomerDetServiceId" method="getCustmerDetResponse" />
+		</route>
+		<!-- Add Cutomer routing -->
+		<route id="invokeAddcustomerRouteID">
+			<from uri="direct:addcustomer" />
+			<bean ref="newCustomerServiceId" method="addNewCustRequest" />
+			<bean ref="newCustomerServiceId" method="newCustResponse" />
+		</route>
+		<!-- Update customer address Details routing -->
+		<route id="invokeUpdateCustAddressRouteID">
+			<from uri="direct:udpatecustomerAddrs" />
+			<bean ref="updateCustAddressServiceId" method="updateCustmerAddrsRequest" />
+			<bean ref="updateCustAddressServiceId" method="updateCustmerAddrsResponse" />
+		</route>
+		 	
+		 <route id="cxfRoute">
+	        <from uri="cxf:bean:claimEndpoint"/>
+	        <log message="${header.operationName}"/>
+	        <recipientList>
+	            <simple>direct:${header.operationName}</simple>
+	        </recipientList>
+	    </route>
+	   
+	    <route>
+	        <from uri="direct:apply"/>
+	        <bean ref="claimProcessor" method="process"/>
+	    </route>
+	    <route>
+	        <from uri="direct:cancel"/>
+	        <bean ref="claimProcessor" method="cancel"/>
+	    </route>
+	    	    
+	    <route>
+	        <from uri="cxfrs:bean:statusEndpoint"/>
+	        <log message="${header.operationName}"/>
+	        <choice>
+	            <when>
+	                <simple>${header.operationName} == "status"</simple>
+	                <bean ref="claimProcessor" method="status"/>
+	            </when>
+	            <when>
+	                <simple>${header.operationName} == "restCancel"</simple>
+	                <setHeader headerName="operationName">
+	                    <simple>cancel</simple>
+	                </setHeader>
+	                <bean ref="claimProcessor" method="prepareList"/>
+	                <to uri="cxf:bean:claimEndpoint"/>
+	            </when>
+	        </choice>
+	        <marshal>
+	            <json library="Jackson"/>
+	        </marshal>
+	    </route>
+	
+       <!--  
+        <route>
+            
+              Note the URI parameters:
+                sslContexParametersRef points to the ssl configuration
+                    further down below in this file.
+                matchOnUriPrefix makes camel also server contents below
+                    of services/MyService like
+                    services/MyService/some/stuff.
+                    This is important for web services.
+            
+            <from id="formId_service" uri="cxfrs://bean://rsServerHelloServiceEnpoint?synchronous=true" />
+            <from uri="jetty:https://0.0.0.0:8443/services/MyService?sslContextParametersRef=sslContextParameters&amp;matchOnUriPrefix=true"/>
+            
+              Note the URI parameters here as well:
+                bridgeEndpoint act as a proxy please.
+                throwExceptiononFailure=false please forward errors. This
+                    is important for SOAP errors to be served correctly.
+             
+            <to uri="jetty:http://127.0.0.1:8081/services/MyService?bridgeEndpoint=true&amp;throwExceptionOnFailure=false"/>
+        </route>
+        -->
+    </camelContext>
+
+</beans>

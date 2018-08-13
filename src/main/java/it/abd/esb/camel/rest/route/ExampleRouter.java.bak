@@ -1,0 +1,23 @@
+package it.abd.esb.camel.rest.route;
+
+import org.apache.camel.Exchange;
+import org.apache.camel.Processor;
+import org.apache.camel.builder.RouteBuilder;
+
+import it.abd.esb.camel.rest.endpoint.impl.HelloRestServiceImpl;
+
+public class ExampleRouter extends RouteBuilder {
+
+	@Override
+	public void configure() throws Exception {
+
+		from("cxfrs://http://0.0.0.0:8184?resourceClasses=" + HelloRestServiceImpl.class.getName())
+		.process(new Processor() {
+			public void process(Exchange exchange) throws Exception {
+				//custom processing here
+			}
+		})
+		.setBody(constant("SUCCESS"));
+	}
+}
+

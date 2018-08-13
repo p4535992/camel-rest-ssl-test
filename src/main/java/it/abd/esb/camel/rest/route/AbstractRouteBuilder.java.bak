@@ -1,0 +1,55 @@
+package it.abd.esb.camel.rest.route;
+
+import org.apache.camel.Exchange;
+import org.apache.camel.builder.RouteBuilder;
+import org.springframework.beans.factory.annotation.Value;
+
+/**
+ * Base class for routes. Contains global exception handler.
+ */
+public abstract class AbstractRouteBuilder extends RouteBuilder {
+
+	@Value("${camel.env}")
+	private String camelEnv;
+
+	@Value("${camel.alert.email}")
+	private String camelAlertEmail;
+
+	/**
+	 * Default exception handling for all routes.
+	 *
+	 * @throws Exception
+	 */
+	@Override
+	public void configure() throws Exception {
+//		onException(Exception.class)
+//				.setHeader("routeId", property(Exchange.FAILURE_ROUTE_ID))
+//				.setHeader("endpoint", property(Exchange.FAILURE_ENDPOINT))
+//				.setHeader("exception", property(Exchange.EXCEPTION_CAUGHT))
+//				.setHeader("subject", simple("Camel Error (" + camelEnv + ") - ${exception.class.simpleName}"))
+//				.transform(simple("${exception.message}\n\nStacktrace Details:\n\n${exception.stacktrace}"))
+//				.to("freemarker:/templates/mail/error.ftl")
+//				.to("smtp://{{mail.host}}?contentType=text/plain&to=" + camelAlertEmail +
+//						"&from={{mail.from}}&subject=${headers.subject})");
+		
+		 // error handling to return custom HTTP status codes for the various exceptions
+
+//        onException(OrderInvalidException.class)
+//            .handled(true)
+//            // use HTTP status 400 when input data is invalid
+//            .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(400))
+//            .setBody(constant(""));
+//
+//        onException(OrderNotFoundException.class)
+//            .handled(true)
+//            // use HTTP status 404 when data was not found
+//            .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(404))
+//            .setBody(constant(""));
+//
+//        onException(Exception.class)
+//            .handled(true)
+//            // use HTTP status 500 when we had a server side error
+//            .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(500))
+//        	.setBody(simple("${exception.message}\n"));
+	}
+}

@@ -1,0 +1,240 @@
+package it.abd.esb.camel.rest.route;
+
+import java.util.UUID;
+
+import org.apache.camel.CamelContext;
+import org.apache.camel.LoggingLevel;
+import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.core.osgi.OsgiDefaultCamelContext;
+import org.apache.camel.model.rest.RestBindingMode;
+import org.apache.camel.spi.Policy;
+import org.apache.camel.spring.spi.SpringTransactionPolicy;
+//import org.osgi.framework.BundleContext;
+//import org.osgi.service.component.annotations.Activate;
+//import org.osgi.service.component.annotations.Component;
+//import org.osgi.service.component.annotations.Deactivate;
+//import org.osgi.service.component.annotations.Reference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import it.abd.esb.alfresco.model.SignRemoteDTO;
+import it.abd.esb.camel.rest.endpoint.SignDocumentEndPoint;
+import it.abd.esb.camel.rest.processor.SignRemoteDTOProcessor;
+//import it.abd.esb.camel.rest.service.impl.ServletRegisterer;
+//import it.abd.esb.camel.rest.service.impl.WordReverseService;
+
+/**
+*
+* @author jeckstei
+*/
+//@Component(service = org.apache.camel.RoutesBuilder.class)
+public class RestRB extends RouteBuilder {
+
+   private static final Logger logger = LoggerFactory.getLogger(RestRB.class);
+   
+   private static String LOCALHOST_HOST = "0.0.0.0";
+   private static int LOCALHOST_PORT = 8182;
+   
+   private SignRemoteDTOProcessor signRemoteDTOProcessor;
+   
+//   private CamelContext context;
+
+//   @Activate
+//   public void activate(BundleContext bundleContext) throws Exception {
+//       context = new OsgiDefaultCamelContext(bundleContext);
+//       context.addRoutes(this);
+//       context.start();
+//   }
+//
+//   @Deactivate
+//   public void deactivate() throws Exception {
+//       context.stop();
+//   }
+
+   /**
+    * @href https://blog.stackleader.com/camel/2016/05/02/deploy-apache-camel-quickstart-karaf.html
+    */
+   @SuppressWarnings("unused")
+   @Override
+   public void configure() throws Exception {
+   	
+   	   getContext().setTracing(true);
+   	
+   	   // lookup the transaction policy
+       //SpringTransactionPolicy required = lookup("PROPAGATION_REQUIRED", SpringTransactionPolicy.class);
+
+       // use this error handler instead of DeadLetterChannel that is the default
+       // Notice: transactionErrorHandler is in SpringRouteBuilder
+       //if (isUseTransactionErrorHandler()) {
+       //    // useTransactionErrorHandler is only used for unit testing to reuse code
+       //    // for doing a 2nd test without this transaction error handler, so ignore
+       //    // this. For spring based transaction, end users are encouraged to use the
+       //    // transaction error handler instead of the default DeadLetterChannel.
+       //    errorHandler(transactionErrorHandler(required));
+       //}
+   	
+       //Policy required = (Policy) method(SpringTransactionPolicy.class, "PROPAGATION_REQUIRED");
+       //Policy requirenew = (Policy) method(SpringTransactionPolicy.class, "PROPAGATION_REQUIRES_NEW");
+
+      
+       // configure we want to use servlet as the component for the rest DSL
+       // and we enable json binding mode
+       //restConfiguration().component("netty4-http").host("0.0.0.0").port("8182").bindingMode(RestBindingMode.json)
+       restConfiguration().component("jetty").host(LOCALHOST_HOST).port(LOCALHOST_PORT)
+       		.bindingMode(RestBindingMode.xml)
+           // and output using pretty print
+           .dataFormatProperty("prettyPrint", "true")
+           .dataFormatProperty("json.in.disableFeatures", "FAIL_ON_UNKNOWN_PROPERTIES,ADJUST_DATES_TO_CONTEXT_TIME_ZONE")
+           .dataFormatProperty("json.in.enableFeatures", "FAIL_ON_NUMBERS_FOR_ENUMS,USE_BIG_DECIMAL_FOR_FLOATS");
+           
+           // setup context path and port number that netty will use
+           //.contextPath("/").port(8080)
+           // add swagger api-doc out of the box
+           // Add the context path for the Swagger-generated API documentation:
+           /*
+           .contextPath("/api-doc")
+               .apiProperty("api.title", "User API").apiProperty("api.version","api.version")
+               // Enable CORS:
+               .apiProperty("cors", "true");
+       		*/
+           //http://camel.465427.n5.nabble.com/swagger-java-with-multiple-wars-returns-no-content-td5791067.html
+           /*
+       		restConfiguration().component("servlet")
+           .endpointProperty("api.title", "User API")
+           .endpointProperty("api.version", "api.version")
+           .dataFormatProperty("prettyPrint", "true")
+           .bindingMode(RestBindingMode.auto)
+           .contextPath("/api-doc");
+           */ 
+       // ===================================
+       // SET UP SIGNDOCUMNET
+       // ===================================
+       //http://localhost:8182/signDocument/sign
+       rest(RouteParameters.SIGN_DOCUMENT_PATH)
+       		.get()
+       		.type(SignRemoteDTO.class)
+       		.to(RouteParameters.SIGN_DOCUMENT_ENDPOINT);
+       		//.enableCORS(true);
+       //CALL SPECIFIC PROCESS METHOD
+       from(RouteParameters.SIGN_DOCUMENT_ENDPOINT)
+       .log(LoggingLevel.INFO, "Processing order")
+       .bean(SignRemoteDTOProcessor.class, "processSignDocument");
+       // ===================================
+       //CALL PROCESS METHOD
+       // ===================================
+       //http://localhost:8183/route/signDocument/sign
+       from("cxfrs://http://"+LOCALHOST_HOST+":"+8183+"/route?resourceClasses="+SignDocumentEndPoint.class.getName())	                
+       .process(new SignRemoteDTOProcessor())
+       .log("Here is the message that was enriched: ${body}");
+       
+       
+       
+       /*
+        * Workaround to support HTTP OPTIONS request required for Swagger API when CORS is enabled
+        * The Allow Header reports the operations supported.
+        * A new verb has been added - https://issues.apache.org/jira/browse/CAMEL-9129 but it will be available for 2.16 or 2.15.x
+        *
+       rest(RouteParameters.SIGN_DOCUMENT_PATH).id("rest-sign-options")
+         .verb("options").route()
+         .setHeader("Access-Control-Allow-Origin", constant("*"))
+         .setHeader("Access-Control-Allow-Methods", constant("GET, HEAD, POST, PUT, DELETE, OPTIONS"))
+         .setHeader("Access-Control-Allow-Headers", constant("Origin, Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers"))
+         .setHeader("Allow", constant("GET, HEAD, POST, PUT, DELETE, OPTIONS"));
+         */
+       
+//       from("jetty:http://localhost:8686/restws").process(new Processor() {		
+//			@Override
+//           public void process(Exchange exchange) throws Exception {
+//               String message = exchange.getIn().getBody(String.class); //http request receives here
+//               System.out.println("Clientest Received : " + message);
+//               exchange.getOut().setBody("Hi :"+ message);//http response to the corresponding request
+//
+//           }
+//       });
+       
+       // ====================================
+       // SERVICE - WordReverseService
+       // =====================================
+       /*
+       from("netty4:tcp://0.0.0.0:8080?textline=true&sync=true")
+               .log(LoggingLevel.INFO, "before ${body}")
+               .to("bean:" + WordReverseService.class.getCanonicalName() + "?method=reverseWords")
+               .log(LoggingLevel.INFO, "after ${body}");
+       */
+       
+       /*
+       restConfiguration().component("servlet").bindingMode(RestBindingMode.json);
+       rest("/ping")
+               .get()
+               .route()
+               .setBody(constant("foo"));
+       */
+       /*
+       restConfiguration().component("servlet")
+       .enableCORS(true)
+       .bindingMode(RestBindingMode.json)
+       .dataFormatProperty("prettyPrint", "true");
+       */
+       
+       // ============================================================
+       // AUTHENTICATION SERVICE
+       // ===============================================================
+       /*
+		from("jetty:http://localhost:8080/api/v1.0/auth")
+		.process(authenticationProcessor)
+		
+		//using Google's OAuth service. In this case, we'd simply replace .process(authenticationProcessor) 
+		//with the Camel gauth component: .to("gauth:authorize?callback=" + encodedCallback + "&scope=" + encodedScope);, 
+		//where encodedCallback and encodedScope are callback URLs to fully handle Google's authentication 
+		
+		.choice()
+		.when(header("authenticated").isEqualTo(true))
+		.setBody().constant(String.format(AUTH_SUCCEEDED, UUID.randomUUID().toString()))
+		.otherwise()
+		.setBody().constant(AUTH_FAILED)
+		.end();
+		*/
+       
+
+       // servlet is configured in Application.java
+       /*
+       restConfiguration().component("servlet").bindingMode(RestBindingMode.json);
+
+       rest("/say")
+       .get("/hello").outType(HelloWorld.class)
+       .to("direct:talk");
+       from("direct:talk")
+       .process(exchange -> {
+    	   HelloWorld hw = new HelloWorld();
+    	   hw.setMessage("Howdy!");
+    	   exchange.getIn().setBody(hw);
+       });
+       */
+   }
+
+//   @Reference(target = "(component=jetty)")
+//   public void waitForCamelJetty9(org.apache.camel.spi.ComponentResolver cr) {
+//
+//   }
+//
+//   @Reference(target = "(dataformat=json-jackson)")
+//   public void waitForJsonDataFormat(org.apache.camel.spi.DataFormatResolver dataformat) {
+//
+//   }
+//   
+//   @Reference(target = "(component=netty4)")
+//   public void waitForCamelComponentNetty4(org.apache.camel.spi.ComponentResolver cr) {
+//
+//   }
+//   
+//   @Reference
+//   public void waitForServletRegister(ServletRegisterer servletRegister) {
+//       
+//   }
+//
+//   @Reference
+//   public void waitForSignRemoteDTOProcessor(SignRemoteDTOProcessor signRemoteDTOProcessor) {
+//       this.signRemoteDTOProcessor = signRemoteDTOProcessor;
+//   }
+}
+
